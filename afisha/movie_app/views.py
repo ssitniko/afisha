@@ -26,12 +26,17 @@ def movie_list_api_view(request):
 @api_view(http_method_names=['GET'])
 def director_list_api_view(request):
     directors = Director.objects.all()
-    list_ = []
-    for i in directors:
-        list_.append({
-            'name': i.name,
-        })
-    return Response(data=list_)
+
+    data = DirectorSerializer(directors, many=True).data
+    return Response(data=data)
+    # list_ = []
+    # for i in directors:
+    #     list_.append({
+    #         'name': i.name,
+    #     })
+    # return Response(data=list_)
+
+
 
 @api_view(http_method_names=['GET'])
 def review_list_api_view(request):
@@ -41,6 +46,7 @@ def review_list_api_view(request):
         list_.append({
             'text': i.text,
             'movie': str(i.movie),
+            'grade': i.grade,
         })
     return Response(data=list_)
 
@@ -73,3 +79,5 @@ def review_detail_api_view(request, id):
                         data={'error': 'Review not found!'})
     data = ReviewSerializer(instance=review).data
     return Response(data=data)
+
+
