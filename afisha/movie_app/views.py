@@ -15,6 +15,7 @@ from .serializers import (MovieSerializer, DirectorSerializer, ReviewSerializer,
 @api_view(http_method_names=['GET','POST'])
 def movie_list_api_view(request):
     # movies = Movie.objects.all()
+    print(request.user)
     if request.method == 'GET':
         movies = Movie.objects.select_related('director').prefetch_related('search_words', 'reviews').all()
 
