@@ -2,16 +2,79 @@ from gettext import textdomain
 from logging import raiseExceptions
 
 from django.core.serializers import serialize
+from rest_framework.generics import ListAPIView
 from django.db import transaction
 from django.shortcuts import render
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Movie, Director, Review
+from .models import Movie, Director, Review, SearchWords
 from .serializers import (MovieSerializer, DirectorSerializer, ReviewSerializer, MovieItemSerializer,
                           DirectorItemSerializer, ReviewItemSerializer, MovieValidateSerializer,
-                          DirectorValidateSerializer, ReviewValidateSerializer)
+                          DirectorValidateSerializer, ReviewValidateSerializer, SearchWordSerializer)
+from rest_framework.viewsets import ModelViewSet
 
+
+
+class DirectorListAPIView(ListCreateAPIView):
+    queryset = Director.objects.all()
+    serializer_class = DirectorSerializer
+
+
+class DirectorDetailAPIView(RetrieveUpdateDestroyAPIView):
+    queryset = Director.objects.all()
+    serializer_class = DirectorSerializer
+    lookup_field = 'id'
+
+class SearchWordsViewSet(ModelViewSet):
+    queryset = SearchWords.objects.all()
+    serializer_class = SearchWordSerializer
+
+class MovieListCreateAPIView(ListCreateAPIView):
+    queryset = Movie.objects.all()
+    serializer_class = MovieSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = MovieValidateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(status=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
+        title = serializer.validated_data.get('title')
+        description = serializer.validated_data.get('description')
+        duration = serializer.validated_data.get('duration')
+        director_id = serializer.validated_data.get('director_id')
+        search_words = serializer.validated_data.get('search_words')
+
+        with transaction.atomic():
+            movie = Movie.objects.create(
+                title=title,
+                description=description,
+                duration=duration,
+                director_id=director_id,
+            )
+            movie.search_words.set(search_words)
+            movie.save()
+        return Response(status=status.HTTP_201_CREATED, data=MovieItemSerializer(movie).data)
+
+class MovieDetailAPIView(RetrieveUpdateDestroyAPIView):
+    queryset = Movie.objects.all()
+    serializer_class = MovieSerializer
+    lookup_field = 'id'
+
+
+class ReviewListAPIView(ListCreateAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    lookup_field = 'id'
+
+class ReviewDetailAPIView(RetrieveUpdateDestroyAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    lookup_field = 'id'
+
+
+# function methods are below
+#====================================================================================================
 @api_view(http_method_names=['GET','POST'])
 def movie_list_api_view(request):
     # movies = Movie.objects.all()
@@ -45,6 +108,7 @@ def movie_list_api_view(request):
             movie.save()
         return Response(status=status.HTTP_201_CREATED, data=MovieItemSerializer(movie).data)
 
+
 @api_view(http_method_names=['GET', 'POST'])
 def director_list_api_view(request):
     if request.method == 'GET':
@@ -63,6 +127,7 @@ def director_list_api_view(request):
             name=name,
         )
         return Response(status=status.HTTP_201_CREATED, data=DirectorItemSerializer(director).data)
+
     # list_ = []
     # for i in directors:
     #     list_.append({
