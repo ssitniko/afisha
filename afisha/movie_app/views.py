@@ -32,7 +32,7 @@ class SearchWordsViewSet(ModelViewSet):
     serializer_class = SearchWordSerializer
 
 class MovieListCreateAPIView(ListCreateAPIView):
-    queryset = Movie.objects.all()
+    queryset = Movie.objects.select_related('director').prefetch_related('search_words', 'reviews').all()
     serializer_class = MovieSerializer
 
     def create(self, request, *args, **kwargs):
